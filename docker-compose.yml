@@ -1,0 +1,34 @@
+version: '3'
+
+services:
+  rabbitmq:
+    image: rabbitmq:4.0.2-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"  # RabbitMQ AMQP port
+      - "15672:15672"  # RabbitMQ Management UI port
+      - "1883:1883"  # MQTT port
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: user
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "status" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: >
+      sh -c "rabbitmq-plugins enable rabbitmq_management rabbitmq_mqtt && rabbitmq-server"
+
+  data_generator:
+    build: .
+    container_name: data_generator
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - PROTOCOL=MQTT
+      - RABBITMQ_HOST=rabbitmq
+      - AMQP_PORT=5672
+      - MQTT_PORT=1883
+    links:
+      - rabbitmq
