@@ -19,6 +19,7 @@ mqtt_port = int(os.getenv('MQTT_PORT', 1883))
 rabbitmq_username = 'user'
 rabbitmq_password = 'user'
 start_time = datetime.now()
+time_interval = int(os.getenv('TIME_INTERVAL', 5))
 
 def format_uptime(uptime_delta):
     total_seconds = int(uptime_delta.total_seconds())
@@ -130,7 +131,7 @@ if __name__ == "__main__":
             elif protocol == "MQTT":
                 send_to_mqtt(mqtt_client, sensor_data)
 
-            time.sleep(5)
+            time.sleep(time_interval)
 
     except Exception as e:
         logging.critical(f"An error occurred: {e}")

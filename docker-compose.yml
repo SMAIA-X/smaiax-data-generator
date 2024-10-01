@@ -30,5 +30,6 @@ services:
       - RABBITMQ_HOST=rabbitmq
       - AMQP_PORT=5672
       - MQTT_PORT=1883
+      - TIME_INTERVAL=5
     links:
       - rabbitmq
