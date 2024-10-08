@@ -1,35 +1,43 @@
-version: '3'
-
 services:
-  rabbitmq:
-    image: rabbitmq:4.0.2-management-alpine
-    container_name: rabbitmq
+  hivemq:
+    image: hivemq/hivemq4
+    container_name: hivemq
     ports:
-      - "5672:5672"  # RabbitMQ AMQP port
-      - "15672:15672"  # RabbitMQ Management UI port
+      - "15672:8080"  # HiveMQ Web UI port
+      - "8000:8000"  # HiveMQ WebSocket port
       - "1883:1883"  # MQTT port
-    environment:
-      RABBITMQ_DEFAULT_USER: user
-      RABBITMQ_DEFAULT_PASS: user
+    ulimits:
+      nofile:
+        soft: 500000
+        hard: 500000
+    networks:
+      - smaiax-backend-network
+      - smaiax-iot-network
     healthcheck:
-      test: [ "CMD", "rabbitmq-diagnostics", "status" ]
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]  # Simple check for HiveMQ Web UI
       interval: 10s
       timeout: 5s
       retries: 5
-    command: >
-      sh -c "rabbitmq-plugins enable rabbitmq_management rabbitmq_mqtt && rabbitmq-server"
 
   data_generator:
     build: .
     container_name: data_generator
     depends_on:
-      rabbitmq:
+      hivemq:
         condition: service_healthy
     environment:
-      - PROTOCOL=MQTT
-      - RABBITMQ_HOST=rabbitmq
-      - AMQP_PORT=5672
+      - MQTT_BROKER_HOST=hivemq
       - MQTT_PORT=1883
       - TIME_INTERVAL=5
     links:
-      - rabbitmq
+      - hivemq
+    networks:
+      - smaiax-iot-network
+
+networks:
+  smaiax-backend-network:
+    name: "smaiax-backend-network"
+    driver: bridge
+  smaiax-iot-network:
+    name: "smaiax-iot-network"
+    driver: bridge

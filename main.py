@@ -1,9 +1,10 @@
 import os
-import pika
 import json
 import time
 import random
 import logging
+import uuid
+
 import paho.mqtt.client as mqtt
 from datetime import datetime
 
@@ -12,12 +13,8 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-protocol = os.getenv('PROTOCOL', 'AMQP').upper()
-rabbitmq_host = os.getenv('RABBITMQ_HOST', 'localhost')
-amqp = int(os.getenv('AMQP_PORT', 5672))
+mqtt_broker_host = os.getenv('MQTT_BROKER_HOST', 'localhost')
 mqtt_port = int(os.getenv('MQTT_PORT', 1883))
-rabbitmq_username = 'user'
-rabbitmq_password = 'user'
 start_time = datetime.now()
 time_interval = int(os.getenv('TIME_INTERVAL', 5))
 
@@ -60,42 +57,22 @@ def generate_sensor_data():
 
     return data
 
-
-def connect_amqp():
-    credentials = pika.PlainCredentials(rabbitmq_username, rabbitmq_password)
-    parameters = pika.ConnectionParameters(rabbitmq_host, amqp, '/', credentials)
-
-    try:
-        connection = pika.BlockingConnection(parameters)
-        logging.info(f"Connected to RabbitMQ at {rabbitmq_host}:{amqp}")
-        return connection.channel()
-    except Exception as ex:
-        logging.error(f"Failed to connect to RabbitMQ: {ex}")
-        raise
-
-
-def send_to_amqp(channel, data):
-    channel.queue_declare(queue='sensor_data')
-    channel.basic_publish(
-        exchange='',
-        routing_key='sensor_data',
-        body=json.dumps(data)
-    )
-    logging.info(f"Sent data at {data['timestamp']} with uptime {data['uptime']}")
-
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        logging.info(f"Connected to MQTT Broker at {rabbitmq_host}:{mqtt_port}")
+        logging.info(f"Connected to MQTT Broker at {mqtt_broker_host}:{mqtt_port}")
     else:
         logging.error(f"Failed to connect to MQTT Broker, return code {rc}")
 
 def connect_mqtt():
-    client = mqtt.Client()
-    client.username_pw_set(rabbitmq_username, rabbitmq_password)
+    client_id = f"data-generator-{uuid.uuid4()}"
+    logging.info(f"Generated client_id: {client_id}")
+
+    client = mqtt.Client(client_id=client_id)
     client.on_connect = on_connect
 
     try:
-        client.connect(rabbitmq_host, mqtt_port, 60)
+        logging.info(f"Connecting to MQTT broker at {mqtt_broker_host}:{mqtt_port}")
+        client.connect(mqtt_broker_host, mqtt_port, 60)
         client.loop_start()
         return client
     except Exception as ex:
@@ -114,22 +91,11 @@ def send_to_mqtt(client, data):
 
 if __name__ == "__main__":
     try:
-        if protocol == "AMQP":
-            channel = connect_amqp()
-            logging.info("Using AMQP")
-        elif protocol == "MQTT":
-            mqtt_client = connect_mqtt()
-            logging.info("Using MQTT")
-        else:
-            raise ValueError("Unknown protocol specified. Use 'AMQP' or 'MQTT'.")
+        mqtt_client = connect_mqtt()
 
         while True:
             sensor_data = generate_sensor_data()
-
-            if protocol == "AMQP":
-                send_to_amqp(channel, sensor_data)
-            elif protocol == "MQTT":
-                send_to_mqtt(mqtt_client, sensor_data)
+            send_to_mqtt(mqtt_client, sensor_data)
 
             time.sleep(time_interval)
 
