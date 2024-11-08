@@ -32,12 +32,13 @@ def format_uptime(uptime_delta):
     return f"{days:04}:{hours:02}:{minutes:02}:{seconds:02}"
 
 
-def generate_sensor_data():
+def generate_sensor_data(smart_meter_id):
     current_time = datetime.now().isoformat()
     uptime_delta = datetime.now() - start_time
     uptime_str = format_uptime(uptime_delta)
 
     data = {
+        "SmartMeterId": str(smart_meter_id),
         "1.7.0": str(random.randint(150, 170)),
         "1.8.0": str(random.randint(1130000, 1138000)),
         "2.7.0": "0",
@@ -92,9 +93,10 @@ def send_to_mqtt(client, data):
 if __name__ == "__main__":
     try:
         mqtt_client = connect_mqtt()
+        smart_meter_id = uuid.uuid4()
 
         while True:
-            sensor_data = generate_sensor_data()
+            sensor_data = generate_sensor_data(smart_meter_id)
             send_to_mqtt(mqtt_client, sensor_data)
 
             time.sleep(time_interval)
