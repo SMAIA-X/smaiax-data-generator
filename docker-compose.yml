@@ -26,6 +26,7 @@ services:
       hivemq:
         condition: service_healthy
     environment:
+      - SMART_METER_ID=${SMART_METER_ID:-}
       - MQTT_BROKER_HOST=hivemq
       - MQTT_PORT=1883
       - TIME_INTERVAL=5

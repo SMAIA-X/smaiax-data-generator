@@ -38,7 +38,7 @@ def generate_sensor_data(smart_meter_id):
     uptime_str = format_uptime(uptime_delta)
 
     data = {
-        "SmartMeterId": str(smart_meter_id),
+        "SmartMeterId": smart_meter_id,
         "1.7.0": str(random.randint(150, 170)),
         "1.8.0": str(random.randint(1130000, 1138000)),
         "2.7.0": "0",
@@ -93,7 +93,10 @@ def send_to_mqtt(client, data):
 if __name__ == "__main__":
     try:
         mqtt_client = connect_mqtt()
-        smart_meter_id = uuid.uuid4()
+        smart_meter_id = os.getenv("SMART_METER_ID")
+        logging.info("smart meter id: ", smart_meter_id)
+        if not smart_meter_id:
+            smart_meter_id = str(uuid.uuid4())
 
         while True:
             sensor_data = generate_sensor_data(smart_meter_id)
