@@ -1,37 +1,39 @@
 services:
-  hivemq:
-    image: hivemq/hivemq4
-    container_name: hivemq
+  rabbitmq:
+    image: rabbitmq:4.0.2-management-alpine
+    container_name: smaiax-mqtt-broker
     ports:
-      - "15672:8080"  # HiveMQ Web UI port
-      - "8000:8000"  # HiveMQ WebSocket port
       - "1883:1883"  # MQTT port
-    ulimits:
-      nofile:
-        soft: 500000
-        hard: 500000
-    networks:
-      - smaiax-backend-network
-      - smaiax-iot-network
+      - "15672:15672"  # RabbitMQ Management UI port
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080"]  # Simple check for HiveMQ Web UI
+      test: [ "CMD", "rabbitmq-diagnostics", "status" ]
       interval: 10s
       timeout: 5s
       retries: 5
+    command: >
+      sh -c "rabbitmq-plugins enable rabbitmq_management rabbitmq_mqtt && rabbitmq-server"
+    networks:
+      - smaiax-iot-network
 
   data_generator:
     build: .
     container_name: data_generator
     depends_on:
-      hivemq:
+      rabbitmq:
         condition: service_healthy
     environment:
-      - SMART_METER_ID=${SMART_METER_ID:-}
-      - MQTT_BROKER_HOST=hivemq
+      - SMART_METER_ID=2f7542f4-9395-40a6-a459-c0fd452b9daa
+      - MQTT_BROKER_HOST=smaiax-mqtt-broker
       - MQTT_PORT=1883
+      - MQTT_USERNAME=user
+      - MQTT_PASSWORD=password
       - TIME_INTERVAL=5
+      - TEST_TOPIC=test
     links:
-      - hivemq
+      - rabbitmq
     networks:
       - smaiax-iot-network
 
