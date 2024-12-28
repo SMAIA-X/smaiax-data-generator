@@ -15,8 +15,11 @@ logging.basicConfig(
 
 mqtt_broker_host = os.getenv('MQTT_BROKER_HOST', 'localhost')
 mqtt_port = int(os.getenv('MQTT_PORT', 1883))
+mqtt_username = os.getenv('MQTT_USERNAME', "user")
+mqtt_password = os.getenv('MQTT_PASSWORD', "password")
 start_time = datetime.now()
 time_interval = int(os.getenv('TIME_INTERVAL', 5))
+topic = os.getenv('TEST_TOPIC', "test")
 
 def format_uptime(uptime_delta):
     total_seconds = int(uptime_delta.total_seconds())
@@ -52,8 +55,8 @@ def generate_sensor_data(smart_meter_id):
         "52.7.0": "{:.2f}".format(random.uniform(229.0, 230.0)),
         "71.7.0": "{:.2f}".format(random.uniform(0.1, 0.2)),
         "72.7.0": "{:.2f}".format(random.uniform(229.0, 230.0)),
-        "uptime": uptime_str,
-        "timestamp": current_time
+        "Uptime": uptime_str,
+        "Timestamp": current_time
     }
 
     return data
@@ -69,6 +72,7 @@ def connect_mqtt():
     logging.info(f"Generated client_id: {client_id}")
 
     client = mqtt.Client(client_id=client_id)
+    client.username_pw_set(mqtt_username, mqtt_password)
     client.on_connect = on_connect
 
     try:
@@ -81,12 +85,11 @@ def connect_mqtt():
         raise
 
 def send_to_mqtt(client, data):
-    topic = "SHRDZM/483FDA074B86/483FDA074B86/sensor"
     payload = json.dumps(data)
     result = client.publish(topic, payload)
 
     if result.rc == mqtt.MQTT_ERR_SUCCESS:
-        logging.info(f"Sent data to MQTT at {data['timestamp']} with uptime {data['uptime']}")
+        logging.info(f"Sent data to MQTT at {data['Timestamp']} with uptime {data['Uptime']}")
     else:
         logging.error("Failed to send message to MQTT broker")
 
@@ -94,7 +97,7 @@ if __name__ == "__main__":
     try:
         mqtt_client = connect_mqtt()
         smart_meter_id = os.getenv("SMART_METER_ID")
-        logging.info("smart meter id: ", smart_meter_id)
+        logging.info(f"smart meter id: {smart_meter_id}")
         if not smart_meter_id:
             smart_meter_id = str(uuid.uuid4())
 
