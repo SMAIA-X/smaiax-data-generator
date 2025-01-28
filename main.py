@@ -3,7 +3,6 @@ import json
 import time
 import random
 import logging
-import uuid
 
 import paho.mqtt.client as mqtt
 from datetime import datetime
@@ -19,7 +18,8 @@ mqtt_username = os.getenv('MQTT_USERNAME', "user")
 mqtt_password = os.getenv('MQTT_PASSWORD', "password")
 start_time = datetime.now()
 time_interval = int(os.getenv('TIME_INTERVAL', 5))
-topic = os.getenv('TEST_TOPIC', "test")
+smart_meter_id = os.getenv("SMART_METER_ID", "070dec95-56bb-4154-a2c4-c26faf9fff4d")
+tenant_id = os.getenv("TENANT_ID", "2edce4d5-47ef-433e-b058-827d7cde050d")
 
 def format_uptime(uptime_delta):
     total_seconds = int(uptime_delta.total_seconds())
@@ -35,13 +35,14 @@ def format_uptime(uptime_delta):
     return f"{days:04}:{hours:02}:{minutes:02}:{seconds:02}"
 
 
-def generate_sensor_data(smart_meter_id):
+def generate_sensor_data():
     current_time = datetime.now().isoformat()
     uptime_delta = datetime.now() - start_time
     uptime_str = format_uptime(uptime_delta)
 
     data = {
         "SmartMeterId": smart_meter_id,
+        "TenantId": tenant_id,
         "1.7.0": str(random.randint(150, 170)),
         "1.8.0": str(random.randint(1130000, 1138000)),
         "2.7.0": "0",
@@ -68,10 +69,7 @@ def on_connect(client, userdata, flags, rc):
         logging.error(f"Failed to connect to MQTT Broker, return code {rc}")
 
 def connect_mqtt():
-    client_id = f"data-generator-{uuid.uuid4()}"
-    logging.info(f"Generated client_id: {client_id}")
-
-    client = mqtt.Client(client_id=client_id)
+    client = mqtt.Client(client_id=f"connector-{smart_meter_id}")
     client.username_pw_set(mqtt_username, mqtt_password)
     client.on_connect = on_connect
 
@@ -86,7 +84,7 @@ def connect_mqtt():
 
 def send_to_mqtt(client, data):
     payload = json.dumps(data)
-    result = client.publish(topic, payload)
+    result = client.publish(f"smartmeter/{smart_meter_id}", payload)
 
     if result.rc == mqtt.MQTT_ERR_SUCCESS:
         logging.info(f"Sent data to MQTT at {data['Timestamp']} with uptime {data['Uptime']}")
@@ -96,13 +94,10 @@ def send_to_mqtt(client, data):
 if __name__ == "__main__":
     try:
         mqtt_client = connect_mqtt()
-        smart_meter_id = os.getenv("SMART_METER_ID")
         logging.info(f"smart meter id: {smart_meter_id}")
-        if not smart_meter_id:
-            smart_meter_id = str(uuid.uuid4())
 
         while True:
-            sensor_data = generate_sensor_data(smart_meter_id)
+            sensor_data = generate_sensor_data()
             send_to_mqtt(mqtt_client, sensor_data)
 
             time.sleep(time_interval)
