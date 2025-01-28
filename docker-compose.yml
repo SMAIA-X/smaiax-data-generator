@@ -26,7 +26,7 @@ services:
         condition: service_healthy
     environment:
       - SMART_METER_ID=070dec95-56bb-4154-a2c4-c26faf9fff4d
-      - TENANT_ID=2edce4d5-47ef-433e-b058-827d7cde050d
+      - TENANT_ID=4846f8c1-d322-48a3-9d5a-b86219c9e14a
       - MQTT_BROKER_HOST=smaiax-mqtt-broker
       - MQTT_PORT=1883
       - MQTT_USERNAME=user

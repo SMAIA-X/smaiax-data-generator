@@ -19,7 +19,7 @@ mqtt_password = os.getenv('MQTT_PASSWORD', "password")
 start_time = datetime.now()
 time_interval = int(os.getenv('TIME_INTERVAL', 5))
 smart_meter_id = os.getenv("SMART_METER_ID", "070dec95-56bb-4154-a2c4-c26faf9fff4d")
-tenant_id = os.getenv("TENANT_ID", "2edce4d5-47ef-433e-b058-827d7cde050d")
+tenant_id = os.getenv("TENANT_ID", "4846f8c1-d322-48a3-9d5a-b86219c9e14a")
 
 def format_uptime(uptime_delta):
     total_seconds = int(uptime_delta.total_seconds())
