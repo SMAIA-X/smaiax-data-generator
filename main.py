@@ -37,27 +37,23 @@ def format_uptime(uptime_delta):
 
 def generate_sensor_data():
     current_time = datetime.now().isoformat()
-    uptime_delta = datetime.now() - start_time
-    uptime_str = format_uptime(uptime_delta)
 
     data = {
-        "SmartMeterId": smart_meter_id,
-        "TenantId": tenant_id,
-        "1.7.0": str(random.randint(150, 170)),
-        "1.8.0": str(random.randint(1130000, 1138000)),
-        "2.7.0": "0",
-        "2.8.0": "0",
-        "3.8.0": str(random.randint(3000, 4000)),
-        "4.8.0": str(random.randint(700000, 720000)),
-        "16.7.0": str(random.randint(150, 170)),
-        "31.7.0": "{:.2f}".format(random.uniform(1.0, 1.1)),
-        "32.7.0": "{:.2f}".format(random.uniform(229.0, 230.0)),
-        "51.7.0": "{:.2f}".format(random.uniform(0.4, 0.5)),
-        "52.7.0": "{:.2f}".format(random.uniform(229.0, 230.0)),
-        "71.7.0": "{:.2f}".format(random.uniform(0.1, 0.2)),
-        "72.7.0": "{:.2f}".format(random.uniform(229.0, 230.0)),
-        "Uptime": uptime_str,
-        "Timestamp": current_time
+        "smart_meter_id": smart_meter_id,
+        "tenant_id": tenant_id,
+        "timestamp": current_time,
+        "voltage_phase_1": round(random.uniform(229.0, 230.0), 2),
+        "voltage_phase_2": round(random.uniform(229.0, 230.0), 2),
+        "voltage_phase_3": round(random.uniform(229.0, 230.0), 2),
+        "current_phase_1": round(random.uniform(0.0, 0.1), 2),
+        "current_phase_2": round(random.uniform(0.0, 0.1), 2),
+        "current_phase_3": round(random.uniform(0.0, 0.1), 2),
+        "positive_active_power": round(random.uniform(0.0, 5.0), 2),
+        "negative_active_power": round(random.uniform(0.0, 1.0), 2),
+        "positive_reactive_energy_total": round(random.uniform(80.0, 100.0), 2),
+        "negative_reactive_energy_total": round(random.uniform(20.0, 30.0), 2),
+        "positive_active_energy_total": round(random.uniform(700.0, 800.0), 2),
+        "negative_active_energy_total": round(random.uniform(0.0, 50.0), 2)
     }
 
     return data
@@ -87,7 +83,7 @@ def send_to_mqtt(client, data):
     result = client.publish(f"smartmeter/{smart_meter_id}", payload)
 
     if result.rc == mqtt.MQTT_ERR_SUCCESS:
-        logging.info(f"Sent data to MQTT at {data['Timestamp']} with uptime {data['Uptime']}")
+        logging.info(f"Sent data to MQTT at {data['timestamp']}")
     else:
         logging.error("Failed to send message to MQTT broker")
 
